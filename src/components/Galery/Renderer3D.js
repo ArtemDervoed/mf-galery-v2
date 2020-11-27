@@ -7,7 +7,7 @@ import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass.js'
 import {ZoomShader} from './zoomShader';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import gsap from 'gsap';
-import images from './hotGirls';
+import {hotGirls} from './hotGirls';
 
 import Card from './Card';
 
@@ -20,6 +20,8 @@ export default class Renderer3D {
   constructor(dom) {
     this.dom = dom;
     this.textures = [];
+
+    this.scale = 1;
 
     this.isZoomBehaviour = true;
 
@@ -76,7 +78,7 @@ export default class Renderer3D {
 
     const loadManager = new THREE.LoadingManager();
     const loader = new THREE.TextureLoader(loadManager);
-    images.forEach(url => {
+    hotGirls.forEach(url => {
       this.textures.push(loader.load(url));
     });
 
@@ -136,18 +138,13 @@ export default class Renderer3D {
     const { width, height } = this.dom.getBoundingClientRect();
     this.mouse.x = (event.clientX / width) * 2 - 1;
     this.mouse.y = -(event.clientY / height) * 2 + 1;
+    gsap.to(this, {
+      duration: 1,
+      scale: 0.75,
+    })
     gsap.to(this.colorPass.uniforms.uZoom, {
       duration: 1,
       value: 1,
-      unUpdate: () => {
-        this.cards.forEach(c => {
-          c.update(this.pos);
-          // c.plane.position.x += 10 * this.colorPass.uniforms.uZoom.value;
-          // c.plane.position.y += 10 * this.colorPass.uniforms.uZoom.value;
-          // console.log(c.plane.position);
-          // c.moveY(this.currentPageScrollY);
-        })
-      }
     })
     this.dom.addEventListener('mousemove', this.handleMouseMove);
   }
@@ -157,6 +154,10 @@ export default class Renderer3D {
     gsap.to(this.colorPass.uniforms.uZoom, {
       duration: 1,
       value: 0,
+    })
+    gsap.to(this, {
+      duration: 1,
+      scale: 1,
     })
     // console.log('up');
     // this.mousepos.setX(0);
@@ -197,8 +198,12 @@ export default class Renderer3D {
   update = () => {
     // console.log(this.currentPageScrollY);
     // console.log(this.pos);
+    // this.scale = THREE.MathUtils.clamp(this.colorPass.uniforms.uZoom.value, 0, 0.25);
     this.cards.forEach(c => {
       c.update(this.pos);
+      c.plane.scale.x = this.scale;
+      c.plane.scale.y = this.scale;
+      c.plane.scale.z = this.scale;
       // c.moveY(this.currentPageScrollY);
     })
     this.pos.z = this.finalPos;

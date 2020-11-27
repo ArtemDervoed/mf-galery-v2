@@ -7,6 +7,7 @@ const Galery = () => {
 
   React.useEffect(() => {
     const ImgGalery = new Renderer3D(galeryRef.current);
+    console.log(ImgGalery);
   }, [galeryRef])
   return <div className="root" ref={galeryRef} />
 };

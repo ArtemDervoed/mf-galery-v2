@@ -36,7 +36,7 @@ import img34 from './Girls/ymnTExnav0s-min.jpg'
 import img35 from './Girls/Yu5WGEVJdUc-min.jpg'
 import img36 from './Girls/ZAAGYl4qiV8-min.jpg'
 
-export default [
+export const hotGirls = [
   img1,
   img2,
   img3,
