@@ -139,12 +139,12 @@ export default class Renderer3D {
     this.mouse.x = (event.clientX / width) * 2 - 1;
     this.mouse.y = -(event.clientY / height) * 2 + 1;
     gsap.to(this, {
-      duration: 1,
+      duration: 0.5,
       scale: 0.75,
     })
     gsap.to(this.colorPass.uniforms.uZoom, {
-      duration: 1,
-      value: 1,
+      duration: 0.5,
+      value: 0.7,
     })
     this.dom.addEventListener('mousemove', this.handleMouseMove);
   }
@@ -152,11 +152,11 @@ export default class Renderer3D {
   handleMouseUp = () => {
     this.isDown = false;
     gsap.to(this.colorPass.uniforms.uZoom, {
-      duration: 1,
+      duration: 0.5,
       value: 0,
     })
     gsap.to(this, {
-      duration: 1,
+      duration: 0.5,
       scale: 1,
     })
     // console.log('up');

@@ -21,13 +21,15 @@ const ZoomShader = {
     uniform float uZoom;
     void main() {
       vec2 coord = vUv;
-      float distance = length(coord - 0.5);
+      // float distance = clamp(length(coord - 0.5), 0.025, 1.) + 0.25;
+      float distance = length(coord - 0.5) + 0.25;
       coord -= 0.5;
-      coord *= (distance + 0.25);
+      coord *= distance;
       coord += 0.5;
       vec2 fcoord = mix(vUv, coord, uZoom);
       vec4 previousPassColor = texture2D(tDiffuse, fcoord);
       gl_FragColor = vec4(previousPassColor.rgb, previousPassColor.a);
+      // gl_FragColor = vec4(distance);
     }
   `,
 
