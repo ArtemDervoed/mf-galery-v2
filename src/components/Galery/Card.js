@@ -109,11 +109,19 @@ export default class Card {
   }
 
   update = (pos) => {
-    let currentContainerPOsition = this.plane.position.z;
-    currentContainerPOsition += (pos.z - currentContainerPOsition) * this.friction;
-
-    this.pos.z = currentContainerPOsition;
+    let currentContainerPOsitionZ = this.plane.position.z;
+    currentContainerPOsitionZ += (pos.z - currentContainerPOsitionZ) * this.friction;
+    this.pos.z = currentContainerPOsitionZ;
     this.plane.position.z = this.pos.z;
+
+    let currentContainerPOsitionY = this.plane.position.y;
+    currentContainerPOsitionY += (this.pos.y - currentContainerPOsitionY) * this.friction;
+    this.plane.position.y = currentContainerPOsitionY;
+
+    let currentContainerPOsitionX = this.plane.position.x;
+    currentContainerPOsitionX += (this.pos.x - currentContainerPOsitionX) * this.friction;
+    this.plane.position.x = currentContainerPOsitionX;
+
 
     // let currentContainerPOsitionY = this.plane.position.y;
     // currentContainerPOsitionY += (pos.y - currentContainerPOsitionY) * this.friction;

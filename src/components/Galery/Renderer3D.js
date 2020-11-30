@@ -26,6 +26,8 @@ export default class Renderer3D {
     this.isZoomBehaviour = true;
 
     this.currentScrollZ = 0;
+    this.currentScrollX = 0;
+    this.currentScrollY = 0;
 
     this.currentPageScrollY = 0;
 
@@ -171,11 +173,13 @@ export default class Renderer3D {
     mouse.x = (event.clientX / width) * 2 - 1;
     mouse.y = -(event.clientY / height) * 2 + 1;
 
-    const dx = this.mouse.x - mouse.x;
-    const dy = this.mouse.y - mouse.y;
+    const dx = (this.mouse.x - mouse.x) * 250;
+    const dy = (this.mouse.y - mouse.y) * 250;
+    this.currentScrollX += dx;
+    this.currentScrollY += dy;
     this.cards.forEach(c => {
-      c.plane.position.x += dx * 500;
-      c.plane.position.y += dy * 500;
+      c.pos.x += dx;
+      c.pos.y += dy;
     });
 
     this.mouse = mouse;
@@ -187,7 +191,8 @@ export default class Renderer3D {
 
   update = () => {
     // console.log(this.currentPageScrollY);
-    // console.log(this.pos);
+    console.log(this.pos);
+    console.log('-----');
     // this.scale = THREE.MathUtils.clamp(this.colorPass.uniforms.uZoom.value, 0, 0.25);
     this.cards.forEach(c => {
       c.update(this.pos);
@@ -197,8 +202,8 @@ export default class Renderer3D {
       // c.moveY(this.currentPageScrollY);
     })
     this.pos.z = this.finalPos;
-    this.pos.x = this.mouse.x;
-    this.pos.y = this.currentPageScrollY;
+    this.pos.x = this.currentScrollX;
+    this.pos.y = this.currentScrollY;
     // this.pos.x = this.dx;
     // this.pos.y = this.dy;
     
