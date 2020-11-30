@@ -144,7 +144,7 @@ export default class Renderer3D {
     })
     gsap.to(this.colorPass.uniforms.uZoom, {
       duration: 0.5,
-      value: 0.7,
+      value: 0.5,
     })
     this.dom.addEventListener('mousemove', this.handleMouseMove);
   }
@@ -179,16 +179,6 @@ export default class Renderer3D {
     });
 
     this.mouse = mouse;
-
-    // c.plane.position.x
-    // c.plane.position.y
-
-    // gsap.to(this.mouse, {
-    //   duration: 0.5,
-    //   x: (event.clientX / width) * 2 - 1,
-    //   y: -(event.clientY / height) * 2 + 1,
-    //   overwrite: 5,
-    // })
   }
 
   animate = () => {
