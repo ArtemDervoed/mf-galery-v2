@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import SimplexNoise from 'simplex-noise';
 // import { FaceNormalsHelper } from 'three/examples/jsm/helpers/FaceNormalsHelper.js';
 
 
@@ -9,17 +10,18 @@ export default class Card {
     this.width = size.width;
     this.height = size.height;
     this.texture = texture;
+    this.simplex = new SimplexNoise();
+    const value2d = this.simplex.noise2D(this.pos.x, this.pos.y);
 
     // console.log(this.texture);
 
-    this.friction = THREE.MathUtils.randFloat(0.15, 0.5);
+    this.friction = THREE.MathUtils.lerp(Math.abs(value2d), 0.25, 0.8); //THREE.MathUtils.randFloat(0.15, 0.5);
     const { x, y } = this.getUvRate(this.texture.image, this.width, this.height);
     this.uvRate = new THREE.Vector2(x, y);
 
     this.geometry = new THREE.PlaneGeometry(this.width, this.height, 32 );
     // this.material = new THREE.MeshPhongMaterial({ color: this.color || 0xff0000 } );
     this.material = new THREE.ShaderMaterial({
-      side: THREE.DoubleSide,
       uniforms: {
         uTexture: {
           value: this.texture,
@@ -67,6 +69,8 @@ export default class Card {
     this.plane = new THREE.Mesh(this.geometry, this.material);
     // this.helper = new FaceNormalsHelper( this.plane, 2, 0x00ff00, 1 );
     this.plane.position.set(this.pos.x, this.pos.y, this.pos.z);
+    this.raycaster = new THREE.Raycaster(this.plane.position);
+    this.arrowHelper = new THREE.ArrowHelper(this.raycaster.ray.direction, this.plane.position, 50, 0x000000 );
   }
 
   getUvRate = (image, width, height) => {
@@ -87,6 +91,10 @@ export default class Card {
     const x = (width / sizes.width) / (height / sizes.height);
     return {x, y: 1};
   };
+
+  setTargetPlane = (plane) => {
+    this.rayTarget = plane;
+  }
 
   // map = (in_min, in_max, out_min, out_max) => {
   //   return ((this - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min
@@ -121,6 +129,13 @@ export default class Card {
     let currentContainerPOsitionX = this.plane.position.x;
     currentContainerPOsitionX += (this.pos.x - currentContainerPOsitionX) * this.friction;
     this.plane.position.x = currentContainerPOsitionX;
+    const intersects = this.raycaster.intersectObjects([this.rayTarget]);
+
+    for ( let i = 0; i < intersects.length; i ++ ) {
+
+      console.log(intersects[ i ]);
+  
+    }
 
 
     // let currentContainerPOsitionY = this.plane.position.y;

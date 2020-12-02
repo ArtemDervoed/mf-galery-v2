@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import normalizeWheel from 'normalize-wheel';
 import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass.js'
 // import {FilmPass} from 'three/examples/jsm/postprocessing/FilmPass.js';
 import {ZoomShader} from './zoomShader';
@@ -11,9 +12,8 @@ import {hotGirls} from './hotGirls';
 
 import Card from './Card';
 
-Number.prototype.map = function(in_min, in_max, out_min, out_max) {
-  console.log(this);
-  return ((this - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min
+const map = (num, in_min, in_max, out_min, out_max) => {
+  return ((num - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min
  }
 
 export default class Renderer3D {
@@ -28,6 +28,13 @@ export default class Renderer3D {
     this.currentScrollZ = 0;
     this.currentScrollX = 0;
     this.currentScrollY = 0;
+
+    this.direction = {
+      x: null,
+      y: null,
+      dx: 0,
+      dy: 0,
+    }
 
     this.currentPageScrollY = 0;
 
@@ -67,16 +74,26 @@ export default class Renderer3D {
 
     this.cards = [];
 
-    this.collsCount = 20;
-    this.rowsCount = 20;
+    this.collsCount = 10;
+    this.rowsCount = 5;
 
     this.vMargn = 100;
-    this.hMargn = 90;
+    this.hMargn = 50;
 
     this.cardHeight = 250;
     this.cardWidth = 175;
 
     this.vOffset = (this.cardHeight + this.vMargn) / 2;
+
+    const planeWidth = (this.cardWidth + this.vMargn) * this.collsCount;
+    const planeHeight = (this.cardHeight + this.hMargn) * this.rowsCount + this.vOffset * 2;
+
+    this.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight, 32 );
+    this.material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+    this.plane = new THREE.Mesh(this.geometry, this.material);
+    this.scene.add(this.plane);
+
+    this.controls = new OrbitControls( this.camera, this.renderer.domElement );
 
     const loadManager = new THREE.LoadingManager();
     const loader = new THREE.TextureLoader(loadManager);
@@ -95,14 +112,30 @@ export default class Renderer3D {
             { width: this.cardWidth, height: this.cardHeight},
             this.textures[THREE.MathUtils.randInt(0, this.textures.length - 1)]
           );
+          card.setTargetPlane(this.plane);
           this.scene.add(card.getCard());
+          this.scene.add(card.arrowHelper);
           // this.scene.add(card.getHelper());
           this.cards.push(card);
         }
       }
+      this.plane.position.x -= this.hMargn + this.vOffset / 2;
+      this.plane.position.y -= this.vMargn;
+      this.plane.position.z = this.farPos - 50;
+      // setTimeout(() => {
+      //   gsap.fromTo(this, {currentScrollZ: -500,},{
+      //     duration: 2.5,
+      //     currentScrollZ: 0,
+      //     onUpdate: () => {
+      //       // this.currentScrollZ = THREE.MathUtils.clamp(this.currentScrollZ + pixelY, this.farPos, this.nearPos);
+      //       const finalPos = THREE.MathUtils.lerp(this.farPos, this.nearPos, this.currentScrollZ / 250);
+      //       this.finalPos = finalPos;
+      //     }
+      //   });
+      // })
     };
 
-    this.dom.addEventListener('wheel', this.handleWheel);
+    // this.dom.addEventListener('wheel', this.handleWheel);
     this.dom.addEventListener('mousedown', this.handleMouseDown);
     this.dom.addEventListener('mouseup', this.handleMouseUp);
 
@@ -123,7 +156,6 @@ export default class Renderer3D {
         overwrite: 5,
       })
     } else {
-      // this.currentPageScrollY = this.currentPageScrollY + pixelY / 10;
       this.cards.forEach(c => {
         gsap.to(c.plane.position, {
           duration: 0.5,
@@ -160,10 +192,11 @@ export default class Renderer3D {
     gsap.to(this, {
       duration: 0.5,
       scale: 1,
-    })
-    // console.log('up');
-    // this.mousepos.setX(0);
-    // this.mousepos.setY(0);
+    });
+    this.direction.x = null;
+    this.direction.y = null;
+    this.direction.dx = 0;
+    this.direction.dy = 0;
     this.dom.removeEventListener('mousemove', this.handleMouseMove);
   }
 
@@ -182,6 +215,17 @@ export default class Renderer3D {
       c.pos.y += dy;
     });
 
+    this.direction.x = dx < 0 ? 'right' : 'left';
+    this.direction.y = dy < 0 ? 'up' : 'down';
+    this.direction.dx = dx;
+    this.direction.dy = dy;
+    if (dx === 0) {
+      this.direction.x = null;
+    }
+
+    if (dy === 0) {
+      this.direction.y = null;
+    }
     this.mouse = mouse;
   }
 
@@ -191,27 +235,24 @@ export default class Renderer3D {
 
   update = () => {
     // console.log(this.currentPageScrollY);
-    console.log(this.pos);
-    console.log('-----');
     // this.scale = THREE.MathUtils.clamp(this.colorPass.uniforms.uZoom.value, 0, 0.25);
     this.cards.forEach(c => {
       c.update(this.pos);
       c.plane.scale.x = this.scale;
       c.plane.scale.y = this.scale;
       c.plane.scale.z = this.scale;
-      // c.moveY(this.currentPageScrollY);
     })
     this.pos.z = this.finalPos;
     this.pos.x = this.currentScrollX;
     this.pos.y = this.currentScrollY;
-    // this.pos.x = this.dx;
-    // this.pos.y = this.dy;
     
   }
 
   render = () => {
+    // console.log(this.direction);
     this.animate();
     this.update();
+    this.controls.update();
     requestAnimationFrame(this.render);
     // this.renderer.render(this.scene, this.camera);
     this.composer.render();
