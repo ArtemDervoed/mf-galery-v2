@@ -36,19 +36,21 @@ export default class Renderer3D {
       dy: 0,
     }
 
+    this.allCards = [];
+
     this.currentPageScrollY = 0;
 
     this.mouse = new THREE.Vector3(0, 0, 0)
     
     // Границы
-    this.farPos = -100;
-    this.nearPos = 200;
+    this.farPos = -1;
+    this.nearPos = 3;
     
     this.finalPos = this.farPos;
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 2000 );
-    this.camera.position.z = 500;
+    this.camera.position.z = 5;
     
 
     this.renderer = new THREE.WebGLRenderer();
@@ -70,6 +72,8 @@ export default class Renderer3D {
 
     this.light = new THREE.AmbientLight( 0xffffff );
     this.scene.add(this.light);
+    this.cardsGroup = new THREE.Group();
+    this.scene.add(this.cardsGroup);
     this.scene.background = new THREE.Color( 0xffffff );
 
     this.cards = [];
@@ -77,11 +81,11 @@ export default class Renderer3D {
     this.collsCount = 10;
     this.rowsCount = 5;
 
-    this.vMargn = 100;
-    this.hMargn = 50;
+    this.vMargn = 1;
+    this.hMargn = 1;
 
-    this.cardHeight = 250;
-    this.cardWidth = 175;
+    this.cardHeight = 3;
+    this.cardWidth = 2;
 
     this.vOffset = (this.cardHeight + this.vMargn) / 2;
 
@@ -91,7 +95,7 @@ export default class Renderer3D {
     this.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight, 32 );
     this.material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
     this.plane = new THREE.Mesh(this.geometry, this.material);
-    this.scene.add(this.plane);
+    // this.scene.add(this.plane);
 
     this.controls = new OrbitControls( this.camera, this.renderer.domElement );
 
@@ -102,45 +106,64 @@ export default class Renderer3D {
     });
 
     loadManager.onLoad = () => {
-      for (let i = 0; i < this.collsCount; i += 1) {
-        const offset = i % 2 === 0 ? this.vOffset : 0;
-        const x = (i - this.collsCount / 2) * (this.cardWidth + this.vMargn);
-        for (let j = 0; j < this.rowsCount; j += 1) {
-          const y = (j - this.rowsCount / 2) * (this.cardHeight + this.hMargn) + offset;
-          const card = new Card(
-            new THREE.Vector3(x, y, this.pos.z),
-            { width: this.cardWidth, height: this.cardHeight},
-            this.textures[THREE.MathUtils.randInt(0, this.textures.length - 1)]
-          );
-          card.setTargetPlane(this.plane);
-          this.scene.add(card.getCard());
-          this.scene.add(card.arrowHelper);
-          // this.scene.add(card.getHelper());
-          this.cards.push(card);
+      const imgsCount = this.collsCount * this.rowsCount;
+      let coll = [];
+      for (let i = 0; i < imgsCount; i += 1) {
+        const card = new Card(
+          new THREE.Vector3(0, 0, this.pos.z),
+          {
+            width: this.cardWidth,
+            height: this.cardHeight
+          },
+          this.textures[THREE.MathUtils.randInt(0, this.textures.length - 1)]
+        );
+        this.allCards.push(card);
+        coll.push(card)
+        // console.log(i % this.rowsCount);
+        if (i % this.rowsCount === this.rowsCount - 1) {
+          const collGroup = this.buildCol(coll);
+          this.cardsGroup.add(collGroup);
+          this.cards.push(collGroup);
+          coll = [];
         }
+        // this.scene.add(card.getCard());
       }
-      this.plane.position.x -= this.hMargn + this.vOffset / 2;
-      this.plane.position.y -= this.vMargn;
-      this.plane.position.z = this.farPos - 50;
-      // setTimeout(() => {
-      //   gsap.fromTo(this, {currentScrollZ: -500,},{
-      //     duration: 2.5,
-      //     currentScrollZ: 0,
-      //     onUpdate: () => {
-      //       // this.currentScrollZ = THREE.MathUtils.clamp(this.currentScrollZ + pixelY, this.farPos, this.nearPos);
-      //       const finalPos = THREE.MathUtils.lerp(this.farPos, this.nearPos, this.currentScrollZ / 250);
-      //       this.finalPos = finalPos;
-      //     }
-      //   });
-      // })
+      this.setPosToColls(this.cards);
+      this.setGroupOffsetToCenter();
     };
-
-    // this.dom.addEventListener('wheel', this.handleWheel);
+    // this.cardsGroup.computeBoundingBox();
+    console.log(this.cardsGroup);
+    this.dom.addEventListener('wheel', this.handleWheel);
     this.dom.addEventListener('mousedown', this.handleMouseDown);
     this.dom.addEventListener('mouseup', this.handleMouseUp);
 
     
     this.render();
+  }
+
+  buildCol = (images) => {
+    const coll = new THREE.Group();
+    images.forEach((c, i) => {
+      let posY = i * (this.cardHeight + this.vMargn);
+      c.plane.position.y = posY;
+      coll.add(c.getCard());
+    })
+    return coll;
+  }
+
+  setPosToColls = (groups) => {
+    groups.forEach((g, i) => {
+      const posX = i * (this.cardWidth + this.hMargn);
+      g.position.x = posX;
+      if (i % 2 === 0) {
+        g.position.y += this.vOffset
+      }
+    });
+  }
+
+  setGroupOffsetToCenter = () => {
+    this.cardsGroup.position.x = -(this.collsCount - 1) * (this.cardWidth + this.hMargn) / 2;
+    this.cardsGroup.position.y = -(this.rowsCount - 1) * (this.cardHeight + this.vMargn) / 2;;
   }
 
   handleWheel = (e) => {
@@ -156,7 +179,7 @@ export default class Renderer3D {
         overwrite: 5,
       })
     } else {
-      this.cards.forEach(c => {
+      this.allCards.forEach(c => {
         gsap.to(c.plane.position, {
           duration: 0.5,
           y: c.plane.position.y + pixelY,
@@ -210,7 +233,7 @@ export default class Renderer3D {
     const dy = (this.mouse.y - mouse.y) * 250;
     this.currentScrollX += dx;
     this.currentScrollY += dy;
-    this.cards.forEach(c => {
+    this.allCards.forEach(c => {
       c.pos.x += dx;
       c.pos.y += dy;
     });
@@ -235,13 +258,13 @@ export default class Renderer3D {
 
   update = () => {
     // console.log(this.currentPageScrollY);
-    // this.scale = THREE.MathUtils.clamp(this.colorPass.uniforms.uZoom.value, 0, 0.25);
-    this.cards.forEach(c => {
-      c.update(this.pos);
-      c.plane.scale.x = this.scale;
-      c.plane.scale.y = this.scale;
-      c.plane.scale.z = this.scale;
-    })
+    this.scale = THREE.MathUtils.clamp(this.colorPass.uniforms.uZoom.value, 0, 0.25);
+    // this.allCards.forEach(c => {
+    //   c.update(this.pos);
+    //   c.plane.scale.x = this.scale;
+    //   c.plane.scale.y = this.scale;
+    //   c.plane.scale.z = this.scale;
+    // })
     this.pos.z = this.finalPos;
     this.pos.x = this.currentScrollX;
     this.pos.y = this.currentScrollY;

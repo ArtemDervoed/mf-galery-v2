@@ -129,13 +129,13 @@ export default class Card {
     let currentContainerPOsitionX = this.plane.position.x;
     currentContainerPOsitionX += (this.pos.x - currentContainerPOsitionX) * this.friction;
     this.plane.position.x = currentContainerPOsitionX;
-    const intersects = this.raycaster.intersectObjects([this.rayTarget]);
+    // const intersects = this.raycaster.intersectObjects([this.rayTarget]);
 
-    for ( let i = 0; i < intersects.length; i ++ ) {
+    // for ( let i = 0; i < intersects.length; i ++ ) {
 
-      console.log(intersects[ i ]);
+    //   console.log(intersects[ i ]);
   
-    }
+    // }
 
 
     // let currentContainerPOsitionY = this.plane.position.y;
