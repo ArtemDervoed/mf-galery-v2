@@ -94,10 +94,14 @@ export default class Renderer3D {
       duration: 0.5,
       strength: 0.5,
     })
-    // gsap.to(this.colorPass.uniforms.uZoom, {
-    //   duration: 0.5,
-    //   value: 0.5,
-    // })
+
+    this.container.children.forEach(s => {
+      gsap.to(s.scale, {
+        duration: 0.5,
+        x: s.origScaleX * 0.8,
+        y: s.origScaleY * 0.8,
+      })
+    })
 
     window.addEventListener('mousemove', this.handleMouseMove);
   }
@@ -113,6 +117,14 @@ export default class Renderer3D {
       scrolltargetX: 0,
       scrolltargetY: 0,
     });
+
+    this.container.children.forEach(s => {
+      gsap.to(s.scale, {
+        duration: 0.5,
+        x: s.origScaleX,
+        y: s.origScaleY,
+      })
+    })
     // this.direction.x = null;
     // this.direction.y = null;
     // this.direction.dx = 0;
@@ -148,7 +160,9 @@ export default class Renderer3D {
         bunny.x = x;
         bunny.y = y;
         bunny.friction = this.clamp(Math.random(), 0.1, 0.5);
-        // bunny.anchor.set(0.5);
+        bunny.anchor.set(0.5);
+        bunny.origScaleX = bunny.scale.x;
+        bunny.origScaleY = bunny.scale.y;
         tempRow.push(bunny);
         this.container.addChild(bunny);
       }
