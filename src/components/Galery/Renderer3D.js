@@ -40,14 +40,14 @@ export default class Renderer3D {
     this.currentScrollX = 0;
     this.currentScrollY = 0;
 
-    this.scale = 1;
+    this.scale = 1.1;
     this.oldscale = this.scale;
 
     this.cardWidth = 250;
     this.cardHeight = 350;
 
-    this.countCardInRow = 12;
-    this.countCardInCol = 12;
+    this.countCardInRow = 13;
+    this.countCardInCol = 7;
 
     this.vMargin = 80;
     this.hMargin = 80;
@@ -71,7 +71,7 @@ export default class Renderer3D {
     this.dom.addEventListener('wheel', this.handleWheel);
     this.dom.addEventListener('mousedown', this.handleMouseDown);
     this.dom.addEventListener('mouseup', this.handleMouseUp);
-    window.addEventListener('mouseover', this.handleMouseUp);
+    // window.addEventListener('mouseover', this.handleMouseUp);
 
     // this.app.renderer.resizeTo(this.dom)
 
@@ -105,10 +105,10 @@ export default class Renderer3D {
     })
     this.oldscale = this.scale;
 
-    gsap.to(this, {
-      duration: 0.5,
-      scale: this.oldscale * 0.7,
-    })
+    // gsap.to(this, {
+    //   duration: 0.5,
+    //   scale: this.oldscale - 0.5,
+    // })
 
     // this.container.children.forEach(s => {
     //   gsap.to(s.scale, {
@@ -133,11 +133,10 @@ export default class Renderer3D {
       scrolltargetY: 0,
     });
 
-    // gsap.to(this, {
-    //   duration: 0.5,
-    //   scale: this.oldscale,
-    //   y: s.origScaleY * this.scale,
-    // })
+    gsap.to(this, {
+      duration: 0.7,
+      scale: this.oldscale,
+    })
 
     // this.container.children.forEach(s => {
     //   gsap.to(s.scale, {
@@ -271,7 +270,7 @@ export default class Renderer3D {
     const normalized = normalizeWheel(e);
     const { pixelY } = normalized;
     gsap.to(this, {
-      scale: this.clamp(this.scale + pixelY / 1000, 0.1, 1),
+      scale: this.clamp(this.scale + pixelY / 1000, 0.7, 1.25),
       duration: 0.5,
     })
   }
