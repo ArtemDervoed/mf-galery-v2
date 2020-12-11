@@ -10,6 +10,7 @@ import {BulgePinchFilter} from '@pixi/filter-bulge-pinch';
 window.PIXI = PIXI
 
 const map = (num, in_min, in_max, out_min, out_max) => {
+  console.log(num, in_min, in_max, out_min, out_max);
   return ((num - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min
  }
 
@@ -17,7 +18,7 @@ export default class Renderer3D {
   constructor(dom) {
     this.dom = dom;
     this.loadingScreenLoader = new PIXI.Loader();
-    this.textures = [];
+    this.sprites = [];
 
     this.rw = 0;
     this.rh = 0;
@@ -45,8 +46,8 @@ export default class Renderer3D {
     this.cardWidth = 250;
     this.cardHeight = 350;
 
-    this.countCardInRow = 8;
-    this.countCardInCol = 7;
+    this.countCardInRow = 12;
+    this.countCardInCol = 12;
 
     this.vMargin = 80;
     this.hMargin = 80;
@@ -55,15 +56,16 @@ export default class Renderer3D {
     this.wholeheight = this.countCardInCol * (this.cardHeight + this.hMargin);
     this.dom.appendChild(this.app.view);
     
+    this.mainContainer = new PIXI.Container();
     this.container = new PIXI.Container();
-    this.rectangleContainer = new PIXI.Container();
+    this.mainContainer.addChild(this.container);
     this.bgFilter = new BulgePinchFilter()
-    this.container.filters = [this.bgFilter];
+    this.mainContainer.filters = [this.bgFilter];
     
     this.bgFilter.uniforms.radius = Math.max(window.innerWidth, window.innerHeight);
     this.bgFilter.uniforms.strength = 0;
     
-    this.app.stage.addChild(this.container);
+    this.app.stage.addChild(this.mainContainer);
     // this.app.stage.addChild(this.rectangleContainer);
 
     this.dom.addEventListener('wheel', this.handleWheel);
@@ -93,21 +95,20 @@ export default class Renderer3D {
   }
 
   handleMouseDown = (e) => {
-    console.log('down');
     this.isDown = true;
     const { width, height } = this.dom.getBoundingClientRect();
     this.mouse.x = (e.clientX / width) * 2 - 1;
     this.mouse.y = -(e.clientY / height) * 2 + 1;
-    // gsap.to(this.bgFilter.uniforms, {
-    //   duration: 0.5,
-    //   strength: 0.5,
-    // })
-    // this.oldscale = this.scale;
+    gsap.to(this.bgFilter.uniforms, {
+      duration: 0.5,
+      strength: 0.5,
+    })
+    this.oldscale = this.scale;
 
-    // gsap.to(this, {
-    //   duration: 0.5,
-    //   scale: this.oldscale * 0.7,
-    // })
+    gsap.to(this, {
+      duration: 0.5,
+      scale: this.oldscale * 0.7,
+    })
 
     // this.container.children.forEach(s => {
     //   gsap.to(s.scale, {
@@ -122,10 +123,10 @@ export default class Renderer3D {
 
   handleMouseUp = () => {
     this.isDown = false;
-    // gsap.to(this.bgFilter.uniforms, {
-    //   duration: 0.5,
-    //   strength: 0,
-    // })
+    gsap.to(this.bgFilter.uniforms, {
+      duration: 0.5,
+      strength: 0,
+    })
     gsap.to(this, {
       duration: 0.5,
       scrolltargetX: 0,
@@ -135,7 +136,7 @@ export default class Renderer3D {
     // gsap.to(this, {
     //   duration: 0.5,
     //   scale: this.oldscale,
-      // y: s.origScaleY * this.scale,
+    //   y: s.origScaleY * this.scale,
     // })
 
     // this.container.children.forEach(s => {
@@ -184,6 +185,7 @@ export default class Renderer3D {
   createGrid = (w, h) => {
     const grid = [];
     for (let coll = 0; coll < w; coll++) {
+      console.log(coll);
       const tempRow = [];
       const x = coll * (this.cardWidth + this.vMargin);
       for (let row = 0; row < h; row++) {
@@ -207,6 +209,8 @@ export default class Renderer3D {
           texture.orig.height / 2,
         );
 
+        this.sprites.push(bunny);
+
         const img = {
           w: texture.orig.width,
           h: texture.orig.height,
@@ -218,21 +222,33 @@ export default class Renderer3D {
         }
 
         const cover = this.calculate(img, parent, 'cover');
+
         spritecContainer.position.set(cover.left, cover.top);
         spritecContainer.scale.set(cover.scale, cover.scale);
         spritecContainer.addChild(bunny);
         container.x = x;
         container.y = y;
-        // const wrapperContainer = new PIXI.Container();
-        // wrapperContainer.addChild(container);
+        // container.pivot.set(0, 0);
+
         container.addChild(spritecContainer);
         container.addChild(mask);
-        tempRow.push(container);
         // container.pivot.set(container.width / 2, container.height / 2)
-        this.container.addChild(container);
+        const wrapContainer = new PIXI.Container();
+        wrapContainer.addChild(container)
+        wrapContainer.pivot.set(this.cardWidth * w / 2, this.cardHeight * h /2)
+        wrapContainer.position.set(window.innerWidth / 2, window.innerHeight / 2)
+        tempRow.push(container);
+        this.container.addChild(wrapContainer);
       }
       grid.push(tempRow);
     }
+    // this.container.position.set(-window.innerWidth / 2, 0)
+    // this.container.x = this.app.screen.width / 2;
+    // this.container.y = this.app.screen.height / 2;
+
+    // this.mainContainer.position.x = -window.innerWidth / 2;
+    // this.mainContainer.position.y = -window.innerHeight / 2;
+    // this.mainContainer.pivot.y = this.container.height / 2;
     return grid;
   }
 
@@ -245,17 +261,7 @@ export default class Renderer3D {
     this.loadingScreenLoader.load();
     this.loadingScreenLoader.onComplete.add(() => {
       this.createGrid(this.countCardInRow, this.countCardInCol);
-      // const graphics = new PIXI.Graphics();
-
-      // Rectangle
-      // this.rw = this.container.width;
-      // this.rh = this.container.height;
-      // graphics.beginFill(0xDE3249, 0.25);
-      // graphics.drawRect(0, 0, this.rw, this.rh);
-      // graphics.endFill();
-      // this.rectangleContainer.addChild(graphics);
-    
-    this.render();
+      this.render();
     });
   };
 
@@ -265,7 +271,7 @@ export default class Renderer3D {
     const normalized = normalizeWheel(e);
     const { pixelY } = normalized;
     gsap.to(this, {
-      scale: this.clamp(this.scale + pixelY / 100, 0.1, 1),
+      scale: this.clamp(this.scale + pixelY / 1000, 0.1, 1),
       duration: 0.5,
     })
   }
@@ -285,11 +291,19 @@ export default class Renderer3D {
       this.currentScrollY -= sy * 0.1;
 
       this.container.children.forEach(s => {
+        const cc = s.children[0];
         // console.log(s);
-        s.position.x = this.calcPos(this.currentScrollX, s.x, this.wholewidth, this.cardWidth, this.vMargin);
-        s.position.y = this.calcPos(this.currentScrollY, s.y,this.wholeheight, this.cardHeight, this.hMargin);
+        // const sx = map(s.position.x / s.z, , 1, 0, window.innerWidth);
+        // const sy = map(s.position.y / s.z, 0, 1, 0, window.innerheight);
+        // console.log(sx);
+        cc.position.x = this.calcPos(this.currentScrollX, cc.x, this.wholewidth, this.cardWidth, this.vMargin);
+        cc.position.y = this.calcPos(this.currentScrollY, cc.y,this.wholeheight, this.cardHeight, this.hMargin);
+
+        // s.anchor(container.width / 2, container.height / 2)
         s.scale.x = this.scale;// * s.origScaleX;
         s.scale.y = this.scale;// * s.origScaleY;
+
+        // s.pivot.set(s.width / 2 - window.innerWidth / 2, s.height / 2 - window.innerHeight / 2)
       });
   });
   }
