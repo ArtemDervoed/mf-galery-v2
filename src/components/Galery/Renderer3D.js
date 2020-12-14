@@ -68,10 +68,10 @@ export default class Renderer3D {
     this.app.stage.addChild(this.mainContainer);
     // this.app.stage.addChild(this.rectangleContainer);
 
-    this.dom.addEventListener('wheel', this.handleWheel);
+    this.dom.addEventListener('mousewheel', this.handleWheel);
     this.dom.addEventListener('mousedown', this.handleMouseDown);
     this.dom.addEventListener('mouseup', this.handleMouseUp);
-    // window.addEventListener('mouseover', this.handleMouseUp);
+    window.addEventListener('mouseover', this.handleMouseUp);
 
     // this.app.renderer.resizeTo(this.dom)
 
@@ -105,6 +105,15 @@ export default class Renderer3D {
     })
     this.oldscale = this.scale;
 
+    this.sprites.forEach(i => {
+      gsap.to(i.scale, {
+        duration: 0.5,
+        x: 0.8,
+        y: 0.8,
+      })
+    });
+
+
     // gsap.to(this, {
     //   duration: 0.5,
     //   scale: this.oldscale - 0.5,
@@ -133,10 +142,18 @@ export default class Renderer3D {
       scrolltargetY: 0,
     });
 
-    gsap.to(this, {
-      duration: 0.7,
-      scale: this.oldscale,
-    })
+    this.sprites.forEach(i => {
+      gsap.to(i.scale, {
+        duration: 0.5,
+        x: 1,
+        y: 1,
+      })
+    });
+
+    // gsap.to(this, {
+    //   duration: 0.7,
+    //   scale: this.oldscale,
+    // })
 
     // this.container.children.forEach(s => {
     //   gsap.to(s.scale, {
@@ -208,6 +225,7 @@ export default class Renderer3D {
           texture.orig.height / 2,
         );
 
+        bunny.originagScale = {...bunny.scale};
         this.sprites.push(bunny);
 
         const img = {
