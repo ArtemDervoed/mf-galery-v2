@@ -46,7 +46,7 @@ export default class Renderer3D {
     this.cardWidth = 250;
     this.cardHeight = 350;
 
-    this.countCardInRow = 13;
+    this.countCardInRow = 12;
     this.countCardInCol = 7;
 
     this.vMargin = 80;
@@ -106,11 +106,20 @@ export default class Renderer3D {
     this.oldscale = this.scale;
 
     this.sprites.forEach(i => {
-      gsap.to(i.scale, {
+      const { scale } = i;
+      gsap.to(scale, {
         duration: 0.5,
         x: 0.8,
         y: 0.8,
       })
+
+      // console.log(mask.originagScale._x);
+      // gsap.to(mask.scale, {
+      //   duration: 0.5,
+      //   x: mask.originagScale._x * 0.8,
+      //   y: mask.originagScale._y * 0.8,
+      // })
+      // console.log(mask.scale);
     });
 
 
@@ -143,11 +152,21 @@ export default class Renderer3D {
     });
 
     this.sprites.forEach(i => {
-      gsap.to(i.scale, {
+      const {scale, mask} = i;
+      // console.log();
+      gsap.to(scale, {
         duration: 0.5,
         x: 1,
         y: 1,
       })
+
+      // console.log(mask.originagScale);
+
+      // gsap.to(mask.scale, {
+      //   duration: 0.5,
+      //   x: mask.originagScale._x,
+      //   y: mask.originagScale._y,
+      // })
     });
 
     // gsap.to(this, {
@@ -219,14 +238,13 @@ export default class Renderer3D {
         mask.height = this.cardHeight;
         bunny.mask = mask;
 
+        bunny.mask.originagScale = {...bunny.mask.scale};
+
         bunny.anchor.set(0.5);
         bunny.position.set(
           texture.orig.width / 2,
           texture.orig.height / 2,
         );
-
-        bunny.originagScale = {...bunny.scale};
-        this.sprites.push(bunny);
 
         const img = {
           w: texture.orig.width,
@@ -242,9 +260,11 @@ export default class Renderer3D {
 
         spritecContainer.position.set(cover.left, cover.top);
         spritecContainer.scale.set(cover.scale, cover.scale);
+
         spritecContainer.addChild(bunny);
         container.x = x;
         container.y = y;
+        this.sprites.push(container);
         // container.pivot.set(0, 0);
 
         container.addChild(spritecContainer);
