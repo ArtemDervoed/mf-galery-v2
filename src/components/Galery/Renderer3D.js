@@ -27,14 +27,13 @@ export default class Renderer3D {
       resizeTo: this.dom
     });
 
-    this.friction = 0.5;
-
     this.mouse = { x: 0, y: 0 };
 
     // this.dom.addEventListener('wheel', this.handleWheel);
 
     this.scrolltargetX = 0;
     this.scrolltargetY = 0;
+
     this.currentScrollX = 0;
     this.currentScrollY = 0;
 
@@ -44,7 +43,7 @@ export default class Renderer3D {
     this.cardWidth = 250;
     this.cardHeight = 350;
 
-    this.countCardInRow = 12;
+    this.countCardInRow = 12; // эта переменная всегда должна быть четная, иначе при переносе сетка не сойдеться
     this.countCardInCol = 7;
 
     this.vMargin = 80;
@@ -78,17 +77,22 @@ export default class Renderer3D {
   }
 
   handleMouseMove = (e) => {
-    console.log('move');
     const { width, height } = this.dom.getBoundingClientRect();
     const mouse = { x: 0, y: 0 };
     mouse.x = (e.clientX / width) * 2 - 1;
     mouse.y = -(e.clientY / height) * 2 + 1;
 
-    const dx = -(this.mouse.x - mouse.x) * 250;
-    const dy = (this.mouse.y - mouse.y) * 250;
+    const dx = -(this.mouse.x - mouse.x) * 400;
+    const dy = (this.mouse.y - mouse.y) * 400;
 
     this.scrolltargetX = dx;
     this.scrolltargetY = dy;
+    // this.container.children.forEach(s => {
+    //   const cc = s.children[0];
+    //   cc.position.x = this.calcPos(this.scrolltargetX, cc.x, this.wholewidth, this.cardWidth, this.vMargin);
+    //   cc.position.y = this.calcPos(this.scrolltargetY, cc.y,this.wholeheight, this.cardHeight, this.hMargin);
+
+    // });
     this.mouse = mouse;
   }
 
@@ -218,6 +222,7 @@ export default class Renderer3D {
         container.x = x;
         container.y = y;
         container.fadeInDelay = this.randomInt(0, 1000) / 1000;
+        container.friction = this.randomInt(100, 500) / 500;
         container.alpha = 0;
 
         this.sprites.push(container);
@@ -280,20 +285,27 @@ export default class Renderer3D {
 
   render = () => {
     this.app.ticker.add(() => {
-      const sx = (this.currentScrollX - this.scrolltargetX);
-      const sy = (this.currentScrollY - this.scrolltargetY);
-      this.currentScrollX -= sx * 0.1;
-      this.currentScrollY -= sy * 0.1;
-
+      // const sx = (this.currentScrollX - this.scrolltargetX);
+      // const sy = (this.currentScrollY - this.scrolltargetY);
+      
       this.container.children.forEach(s => {
         const cc = s.children[0];
+        let currentContainerPOsitionZ = s.scale.x;
+        currentContainerPOsitionZ += (this.scale - currentContainerPOsitionZ) * cc.friction;
+        s.scale.x = currentContainerPOsitionZ;
+        s.scale.y = currentContainerPOsitionZ;
 
-        cc.position.x = this.calcPos(this.currentScrollX, cc.x, this.wholewidth, this.cardWidth, this.vMargin);
-        cc.position.y = this.calcPos(this.currentScrollY, cc.y,this.wholeheight, this.cardHeight, this.hMargin);
 
-        s.scale.x = this.scale;
-        s.scale.y = this.scale;
+        let currentContainerPOsitionY = this.currentScrollY;
+        currentContainerPOsitionY += (this.scrolltargetY - currentContainerPOsitionY) * cc.friction;
+        cc.position.y = this.calcPos(currentContainerPOsitionY, cc.y,this.wholeheight, this.cardHeight, this.hMargin);
+
+        let currentContainerPOsitionX = this.currentScrollX;
+        currentContainerPOsitionX += (this.scrolltargetX - currentContainerPOsitionX) * cc.friction;
+        cc.position.x = this.calcPos(currentContainerPOsitionX, cc.x,this.wholewidth, this.cardWidth, this.vMargin);
       });
+      this.currentScrollX = this.scrolltargetX;
+      this.currentScrollY = this.scrolltargetY;
   });
   }
 }
