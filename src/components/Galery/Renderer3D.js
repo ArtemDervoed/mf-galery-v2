@@ -5,8 +5,6 @@ import gsap from 'gsap';
 import {hotGirls} from './hotGirls';
 import {BulgePinchFilter} from '@pixi/filter-bulge-pinch';
 
-// import CoverImage from './Card';
-
 window.PIXI = PIXI
 
 const map = (num, in_min, in_max, out_min, out_max) => {
@@ -112,30 +110,7 @@ export default class Renderer3D {
         x: 0.8,
         y: 0.8,
       })
-
-      // console.log(mask.originagScale._x);
-      // gsap.to(mask.scale, {
-      //   duration: 0.5,
-      //   x: mask.originagScale._x * 0.8,
-      //   y: mask.originagScale._y * 0.8,
-      // })
-      // console.log(mask.scale);
     });
-
-
-    // gsap.to(this, {
-    //   duration: 0.5,
-    //   scale: this.oldscale - 0.5,
-    // })
-
-    // this.container.children.forEach(s => {
-    //   gsap.to(s.scale, {
-    //     duration: 0.5,
-    //     x: s.origScaleX * this.scale * 0.5,
-    //     y: s.origScaleY * this.scale * 0.5,
-    //   })
-    // })
-
     window.addEventListener('mousemove', this.handleMouseMove);
   }
 
@@ -152,35 +127,13 @@ export default class Renderer3D {
     });
 
     this.sprites.forEach(i => {
-      const {scale, mask} = i;
-      // console.log();
+      const {scale} = i;
       gsap.to(scale, {
         duration: 0.5,
         x: 1,
         y: 1,
       })
-
-      // console.log(mask.originagScale);
-
-      // gsap.to(mask.scale, {
-      //   duration: 0.5,
-      //   x: mask.originagScale._x,
-      //   y: mask.originagScale._y,
-      // })
     });
-
-    // gsap.to(this, {
-    //   duration: 0.7,
-    //   scale: this.oldscale,
-    // })
-
-    // this.container.children.forEach(s => {
-    //   gsap.to(s.scale, {
-    //     duration: 0.5,
-    //     x: s.origScaleX * this.scale,
-    //     y: s.origScaleY * this.scale,
-    //   })
-    // })
     window.removeEventListener('mousemove', this.handleMouseMove);
   }
 
@@ -264,12 +217,14 @@ export default class Renderer3D {
         spritecContainer.addChild(bunny);
         container.x = x;
         container.y = y;
+        container.fadeInDelay = this.randomInt(0, 1000) / 1000;
+        container.alpha = 0;
+
         this.sprites.push(container);
-        // container.pivot.set(0, 0);
 
         container.addChild(spritecContainer);
         container.addChild(mask);
-        // container.pivot.set(container.width / 2, container.height / 2)
+
         const wrapContainer = new PIXI.Container();
         wrapContainer.addChild(container)
         wrapContainer.pivot.set(this.cardWidth * w / 2, this.cardHeight * h /2)
@@ -279,13 +234,6 @@ export default class Renderer3D {
       }
       grid.push(tempRow);
     }
-    // this.container.position.set(-window.innerWidth / 2, 0)
-    // this.container.x = this.app.screen.width / 2;
-    // this.container.y = this.app.screen.height / 2;
-
-    // this.mainContainer.position.x = -window.innerWidth / 2;
-    // this.mainContainer.position.y = -window.innerHeight / 2;
-    // this.mainContainer.pivot.y = this.container.height / 2;
     return grid;
   }
 
@@ -299,10 +247,20 @@ export default class Renderer3D {
     this.loadingScreenLoader.onComplete.add(() => {
       this.createGrid(this.countCardInRow, this.countCardInCol);
       this.render();
+
+      this.showCards();
     });
   };
 
-
+  showCards = () => {
+    this.sprites.forEach(i => {
+      gsap.to(i, {
+        alpha: 1,
+        delay: i.fadeInDelay,
+        duration: 2.5,
+      })
+    });
+  }
 
   handleWheel = (e) => {
     const normalized = normalizeWheel(e);
@@ -329,18 +287,12 @@ export default class Renderer3D {
 
       this.container.children.forEach(s => {
         const cc = s.children[0];
-        // console.log(s);
-        // const sx = map(s.position.x / s.z, , 1, 0, window.innerWidth);
-        // const sy = map(s.position.y / s.z, 0, 1, 0, window.innerheight);
-        // console.log(sx);
+
         cc.position.x = this.calcPos(this.currentScrollX, cc.x, this.wholewidth, this.cardWidth, this.vMargin);
         cc.position.y = this.calcPos(this.currentScrollY, cc.y,this.wholeheight, this.cardHeight, this.hMargin);
 
-        // s.anchor(container.width / 2, container.height / 2)
-        s.scale.x = this.scale;// * s.origScaleX;
-        s.scale.y = this.scale;// * s.origScaleY;
-
-        // s.pivot.set(s.width / 2 - window.innerWidth / 2, s.height / 2 - window.innerHeight / 2)
+        s.scale.x = this.scale;
+        s.scale.y = this.scale;
       });
   });
   }
