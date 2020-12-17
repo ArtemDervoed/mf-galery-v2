@@ -2,6 +2,7 @@
 import * as PIXI from 'pixi.js';
 import normalizeWheel from 'normalize-wheel';
 import gsap from 'gsap';
+import {debounce} from 'lodash';
 import {BulgePinchFilter} from '@pixi/filter-bulge-pinch';
 
 window.PIXI = PIXI
@@ -43,6 +44,7 @@ export default class Renderer3D {
     this.countCardInRow = 12; // эта переменная всегда должна быть четная, иначе при переносе сетка не сойдеться
     this.countCardInCol = 5;
 
+    
     this.vMargin = 40;
     this.hMargin = 40;
 
@@ -65,6 +67,8 @@ export default class Renderer3D {
     this.dom.addEventListener('mousedown', this.handleMouseDown);
     this.dom.addEventListener('mouseup', this.handleMouseUp);
     window.addEventListener('mouseover', this.handleMouseOver);
+    window.addEventListener('mousemove', this.handleEaseMouseMove);
+    window.addEventListener('mousemove', debounce(this.handleEaseMouseMove));
   
     this.preload();
   }
@@ -74,7 +78,27 @@ export default class Renderer3D {
     this.dom.removeEventListener('mousedown', this.handleMouseDown);
     this.dom.removeEventListener('mouseup', this.handleMouseUp);
     window.removeEventListener('mouseover', this.handleMouseOver);
+    window.removeEventListener('mousemove', this.handleEaseMouseMove);
+    window.removeEventListener('mousemove', debounce(this.handleEaseMouseMove));
     this.mainContainer.destroy();
+  }
+
+  handleEaseMouseMove = (e) => {
+    const { width, height } = this.dom.getBoundingClientRect();
+    const mouse = { x: 0, y: 0 };
+    mouse.x = (e.clientX / width) * 2 - 1;
+    mouse.y = -(e.clientY / height) * 2 + 1;
+
+    const dx = -(this.mouse.x - mouse.x) * 100;
+    const dy = (this.mouse.y - mouse.y) * 100;
+
+    gsap.to(this, {
+      duration: 0.75,
+      scrolltargetX: dx,
+      scrolltargetY: dy,
+    })
+
+    this.mouse = mouse;
   }
 
   handleMouseMove = (e) => {
@@ -96,6 +120,8 @@ export default class Renderer3D {
   }
 
   handleMouseDown = (e) => {
+    window.removeEventListener('mousemove', this.handleEaseMouseMove);
+    window.removeEventListener('mousemove', debounce(this.handleEaseMouseMove));
     const { width, height } = this.dom.getBoundingClientRect();
     this.mouse.x = (e.clientX / width) * 2 - 1;
     this.mouse.y = -(e.clientY / height) * 2 + 1;
@@ -136,6 +162,8 @@ export default class Renderer3D {
       })
     });
     window.removeEventListener('mousemove', this.handleMouseMove);
+    window.addEventListener('mousemove', this.handleEaseMouseMove);
+    window.addEventListener('mousemove', debounce(this.handleEaseMouseMove));
   }
 
   handleMouseOver = () => {
@@ -287,6 +315,15 @@ export default class Renderer3D {
         duration: 2.5,
       })
     });
+    gsap.fromTo(this, {
+      scale: 0.75,
+    }, {
+      scale: 1.1,
+      duration: 2.5,
+      onUpdate: () => {
+        this.oldscale = this.scale;
+      },
+    })
   }
 
   hideCards = () => {
