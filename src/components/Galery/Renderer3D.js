@@ -2,18 +2,13 @@
 import * as PIXI from 'pixi.js';
 import normalizeWheel from 'normalize-wheel';
 import gsap from 'gsap';
-import {hotGirls} from './hotGirls';
 import {BulgePinchFilter} from '@pixi/filter-bulge-pinch';
 
 window.PIXI = PIXI
 
-const map = (num, in_min, in_max, out_min, out_max) => {
-  console.log(num, in_min, in_max, out_min, out_max);
-  return ((num - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min
- }
-
 export default class Renderer3D {
-  constructor(dom) {
+  constructor(dom, images) {
+    this.images = images;
     this.dom = dom;
     this.loadingScreenLoader = new PIXI.Loader();
     this.sprites = [];
@@ -24,12 +19,14 @@ export default class Renderer3D {
     this.app = new PIXI.Application({
       width: window.innerWidth,
       height: window.innerHeight,
-      resizeTo: this.dom
+      resizeTo: window,
+      backgroundColor: 0xFFFfFF,
+      resolution: 1
     });
 
     this.mouse = { x: 0, y: 0 };
-
-    // this.dom.addEventListener('wheel', this.handleWheel);
+    this.oldMouse = {...this.mouse};
+    this.isMousePressed = false;
 
     this.scrolltargetX = 0;
     this.scrolltargetY = 0;
@@ -44,10 +41,10 @@ export default class Renderer3D {
     this.cardHeight = 350;
 
     this.countCardInRow = 12; // эта переменная всегда должна быть четная, иначе при переносе сетка не сойдеться
-    this.countCardInCol = 7;
+    this.countCardInCol = 5;
 
-    this.vMargin = 80;
-    this.hMargin = 80;
+    this.vMargin = 40;
+    this.hMargin = 40;
 
     this.wholewidth = this.countCardInRow * (this.cardWidth + this.vMargin);
     this.wholeheight = this.countCardInCol * (this.cardHeight + this.hMargin);
@@ -63,17 +60,21 @@ export default class Renderer3D {
     this.bgFilter.uniforms.strength = 0;
     
     this.app.stage.addChild(this.mainContainer);
-    // this.app.stage.addChild(this.rectangleContainer);
 
     this.dom.addEventListener('mousewheel', this.handleWheel);
     this.dom.addEventListener('mousedown', this.handleMouseDown);
     this.dom.addEventListener('mouseup', this.handleMouseUp);
-    window.addEventListener('mouseover', this.handleMouseUp);
-
-    // this.app.renderer.resizeTo(this.dom)
-
-    this.app.renderer.backgroundColor = 0xFFFfFF;
+    window.addEventListener('mouseover', this.handleMouseOver);
+  
     this.preload();
+  }
+
+  destroy = () => {
+    this.dom.removeEventListener('mousewheel', this.handleWheel);
+    this.dom.removeEventListener('mousedown', this.handleMouseDown);
+    this.dom.removeEventListener('mouseup', this.handleMouseUp);
+    window.removeEventListener('mouseover', this.handleMouseOver);
+    this.mainContainer.destroy();
   }
 
   handleMouseMove = (e) => {
@@ -82,27 +83,24 @@ export default class Renderer3D {
     mouse.x = (e.clientX / width) * 2 - 1;
     mouse.y = -(e.clientY / height) * 2 + 1;
 
-    const dx = -(this.mouse.x - mouse.x) * 400;
-    const dy = (this.mouse.y - mouse.y) * 400;
+    const dx = -(this.mouse.x - mouse.x) * 1000;
+    const dy = (this.mouse.y - mouse.y) * 1000;
 
-    this.scrolltargetX = dx;
-    this.scrolltargetY = dy;
-    // this.container.children.forEach(s => {
-    //   const cc = s.children[0];
-    //   cc.position.x = this.calcPos(this.scrolltargetX, cc.x, this.wholewidth, this.cardWidth, this.vMargin);
-    //   cc.position.y = this.calcPos(this.scrolltargetY, cc.y,this.wholeheight, this.cardHeight, this.hMargin);
+    gsap.to(this, {
+      duration: 0.75,
+      scrolltargetX: dx,
+      scrolltargetY: dy,
+    })
 
-    // });
-    this.mouse = mouse;
+    this.mouse = mouse; 
   }
 
   handleMouseDown = (e) => {
-    this.isDown = true;
     const { width, height } = this.dom.getBoundingClientRect();
     this.mouse.x = (e.clientX / width) * 2 - 1;
     this.mouse.y = -(e.clientY / height) * 2 + 1;
     gsap.to(this.bgFilter.uniforms, {
-      duration: 0.5,
+      duration: 0.75,
       strength: 0.5,
     })
     this.oldscale = this.scale;
@@ -110,7 +108,7 @@ export default class Renderer3D {
     this.sprites.forEach(i => {
       const { scale } = i;
       gsap.to(scale, {
-        duration: 0.5,
+        duration: 0.75,
         x: 0.8,
         y: 0.8,
       })
@@ -119,13 +117,12 @@ export default class Renderer3D {
   }
 
   handleMouseUp = () => {
-    this.isDown = false;
     gsap.to(this.bgFilter.uniforms, {
-      duration: 0.5,
+      duration: 0.75,
       strength: 0,
     })
     gsap.to(this, {
-      duration: 0.5,
+      duration: 0.75,
       scrolltargetX: 0,
       scrolltargetY: 0,
     });
@@ -133,11 +130,35 @@ export default class Renderer3D {
     this.sprites.forEach(i => {
       const {scale} = i;
       gsap.to(scale, {
-        duration: 0.5,
+        duration: 0.75,
         x: 1,
         y: 1,
       })
     });
+    window.removeEventListener('mousemove', this.handleMouseMove);
+  }
+
+  handleMouseOver = () => {
+    this.isMousePressed = false;
+    gsap.to(this.bgFilter.uniforms, {
+      duration: 0.75,
+      strength: 0,
+    })
+    gsap.to(this, {
+      duration: 0.75,
+      scrolltargetX: 0,
+      scrolltargetY: 0,
+    });
+
+    this.sprites.forEach(i => {
+      const {scale} = i;
+      gsap.to(scale, {
+        duration: 0.75,
+        x: 1,
+        y: 1,
+      })
+    });
+    this.oldMouse = {...this.mouse}; 
     window.removeEventListener('mousemove', this.handleMouseMove);
   }
 
@@ -177,7 +198,6 @@ export default class Renderer3D {
   createGrid = (w, h) => {
     const grid = [];
     for (let coll = 0; coll < w; coll++) {
-      console.log(coll);
       const tempRow = [];
       const x = coll * (this.cardWidth + this.vMargin);
       for (let row = 0; row < h; row++) {
@@ -185,7 +205,7 @@ export default class Renderer3D {
         if (coll % 2 === 0) {
           y+= (this.cardHeight + this.hMargin) / 2;
         }
-        const texture = PIXI.Texture.from(hotGirls[this.randomInt(0, hotGirls.length - 1)]);
+        const texture = PIXI.Texture.from(this.images[this.randomInt(0, this.images.length - 1)]);
         const bunny = new PIXI.Sprite(texture);
         const container = new PIXI.Container();
         const spritecContainer = new PIXI.Container();
@@ -222,7 +242,9 @@ export default class Renderer3D {
         container.x = x;
         container.y = y;
         container.fadeInDelay = this.randomInt(0, 1000) / 1000;
-        container.friction = this.randomInt(100, 500) / 500;
+        const f = row % 2 === 0 && coll % 2 === 0 ? 100 : 1000;
+        container.friction = this.randomInt(100, f) / f;
+        container.swipeFriction = this.randomInt(0, f) / f;
         container.alpha = 0;
 
         this.sprites.push(container);
@@ -244,7 +266,7 @@ export default class Renderer3D {
 
 
   preload = () => {
-    hotGirls.forEach(item => {
+    this.images.forEach(item => {
       this.loadingScreenLoader.add(item, item);
     });
 
@@ -267,27 +289,33 @@ export default class Renderer3D {
     });
   }
 
+  hideCards = () => {
+    this.sprites.forEach(i => {
+      gsap.to(i, {
+        alpha: 0,
+        delay: i.fadeInDelay,
+        duration: 2.5,
+      })
+    });
+  }
+
   handleWheel = (e) => {
     const normalized = normalizeWheel(e);
     const { pixelY } = normalized;
     gsap.to(this, {
       scale: this.clamp(this.scale + pixelY / 1000, 0.7, 1.25),
-      duration: 0.5,
+      duration: 0.75,
     })
   }
 
   calcPos = (scroll, pos, whole, size, margin) => {
-
     let temp = (scroll + pos + whole + size + margin) % whole - size - margin;
-
     return temp;
   }
 
   render = () => {
+    console.log(this.isMousePressed);
     this.app.ticker.add(() => {
-      // const sx = (this.currentScrollX - this.scrolltargetX);
-      // const sy = (this.currentScrollY - this.scrolltargetY);
-      
       this.container.children.forEach(s => {
         const cc = s.children[0];
         let currentContainerPOsitionZ = s.scale.x;
@@ -297,15 +325,15 @@ export default class Renderer3D {
 
 
         let currentContainerPOsitionY = this.currentScrollY;
-        currentContainerPOsitionY += (this.scrolltargetY - currentContainerPOsitionY) * cc.friction;
+        currentContainerPOsitionY += (this.scrolltargetY - currentContainerPOsitionY) * cc.swipeFriction;
         cc.position.y = this.calcPos(currentContainerPOsitionY, cc.y,this.wholeheight, this.cardHeight, this.hMargin);
 
         let currentContainerPOsitionX = this.currentScrollX;
-        currentContainerPOsitionX += (this.scrolltargetX - currentContainerPOsitionX) * cc.friction;
+        currentContainerPOsitionX += (this.scrolltargetX - currentContainerPOsitionX) * cc.swipeFriction;
         cc.position.x = this.calcPos(currentContainerPOsitionX, cc.x,this.wholewidth, this.cardWidth, this.vMargin);
       });
       this.currentScrollX = this.scrolltargetX;
       this.currentScrollY = this.scrolltargetY;
-  });
+    });
   }
 }
