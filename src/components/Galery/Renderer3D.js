@@ -228,6 +228,20 @@ export default class Renderer3D {
     window.removeEventListener('mousemove', this.handleMouseMove);
   }
 
+
+onDragStart = (event) => {
+  this.handleMouseDown({ clientX: event.data.global.x, clientY: event.data.global.y});
+}
+
+onDragEnd = () => {
+  this.handleMouseUp();
+}
+
+onDragMove = (e) => {
+  this.handleMouseMove({ clientX: e.data.global.x, clientY: e.data.global.y });
+}
+
+
   randomInt = (min, max) => {
     return min + Math.floor((max - min) * Math.random());
   }
@@ -267,6 +281,11 @@ export default class Renderer3D {
     this.mainContainer.addChild(this.container);
     this.mainContainer.filters = [this.bgFilter];
     this.app.stage.addChild(this.mainContainer);
+    this.mainContainer.interactive = true;
+    this.mainContainer.on('touchstart', this.onDragStart)
+      .on('touchend', this.onDragEnd)
+      .on('touchendoutside', this.onDragEnd)
+      .on('touchmove', this.onDragMove);
 
     const grid = [];
     for (let coll = 0; coll < w; coll++) {
