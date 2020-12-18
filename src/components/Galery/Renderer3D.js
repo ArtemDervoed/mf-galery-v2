@@ -5,6 +5,13 @@ import gsap from 'gsap';
 import {debounce} from 'lodash';
 import {BulgePinchFilter} from '@pixi/filter-bulge-pinch';
 
+
+const cardWidth = 250;
+const cardHeight = 350;
+
+const vMargin = 40;
+const hMargin = 40;
+
 window.PIXI = PIXI
 
 export default class Renderer3D {
@@ -13,6 +20,8 @@ export default class Renderer3D {
     this.dom = dom;
     this.loadingScreenLoader = new PIXI.Loader();
     this.sprites = [];
+
+    this.scaleCoef = this.calcGlobalScale();
 
     this.rw = 0;
     this.rh = 0;
@@ -38,39 +47,45 @@ export default class Renderer3D {
     this.scale = 1.1;
     this.oldscale = this.scale;
 
-    this.cardWidth = 250;
-    this.cardHeight = 350;
+    this.cardWidth = cardWidth * this.scaleCoef;
+    this.cardHeight = cardHeight * this.scaleCoef;
 
-    this.countCardInRow = 12; // эта переменная всегда должна быть четная, иначе при переносе сетка не сойдеться
-    this.countCardInCol = 5;
+    this.vMargin = vMargin * this.scaleCoef;
+    this.hMargin = hMargin * this.scaleCoef;
 
-    
-    this.vMargin = 40;
-    this.hMargin = 40;
+    const { countInColl, countInRow } = this.calcCountCardsInCollRow(); 
+
+    this.countCardInRow = countInRow; // эта переменная всегда должна быть четная, иначе при переносе сетка не сойдеться
+    this.countCardInCol = countInColl;
 
     this.wholewidth = this.countCardInRow * (this.cardWidth + this.vMargin);
     this.wholeheight = this.countCardInCol * (this.cardHeight + this.hMargin);
     this.dom.appendChild(this.app.view);
     
-    this.mainContainer = new PIXI.Container();
-    this.container = new PIXI.Container();
-    this.mainContainer.addChild(this.container);
     this.bgFilter = new BulgePinchFilter()
-    this.mainContainer.filters = [this.bgFilter];
-    
     this.bgFilter.uniforms.radius = Math.max(window.innerWidth, window.innerHeight);
     this.bgFilter.uniforms.strength = 0;
-    
-    this.app.stage.addChild(this.mainContainer);
 
     this.dom.addEventListener('mousewheel', this.handleWheel);
     this.dom.addEventListener('mousedown', this.handleMouseDown);
     this.dom.addEventListener('mouseup', this.handleMouseUp);
+    window.addEventListener('resize', this.handleresize);
     window.addEventListener('mouseover', this.handleMouseOver);
     window.addEventListener('mousemove', this.handleEaseMouseMove);
     window.addEventListener('mousemove', debounce(this.handleEaseMouseMove));
   
     this.preload();
+  }
+
+  calcGlobalScale = () => {
+    return window.innerWidth / 1920;
+  }
+
+  calcCountCardsInCollRow = () => {
+    let countInRow = Math.floor(window.innerWidth * 2 /(this.hMargin + this.cardWidth));
+    let countInColl = Math.floor(window.innerHeight * 2 /(this.vMargin + this.cardHeight)) + 1;
+    countInRow = countInRow % 2 === 0 ? countInRow : countInRow + 1;
+    return { countInColl, countInRow };
   }
 
   destroy = () => {
@@ -81,6 +96,29 @@ export default class Renderer3D {
     window.removeEventListener('mousemove', this.handleEaseMouseMove);
     window.removeEventListener('mousemove', debounce(this.handleEaseMouseMove));
     this.mainContainer.destroy();
+  }
+
+  handleresize = () => {
+    this.destroy();
+    this.scaleCoef = this.calcGlobalScale();
+    this.cardWidth = cardWidth * this.scaleCoef;
+    this.cardHeight = cardHeight * this.scaleCoef;
+
+    this.vMargin = vMargin * this.scaleCoef;
+    this.hMargin = hMargin * this.scaleCoef;
+    const { countInColl, countInRow } = this.calcCountCardsInCollRow(); 
+    this.countCardInRow = countInRow;
+    this.countCardInCol = countInColl;
+    this.wholewidth = this.countCardInRow * (this.cardWidth + this.vMargin);
+    this.wholeheight = this.countCardInCol * (this.cardHeight + this.hMargin);
+    this.createGrid(this.countCardInRow, this.countCardInCol);
+    this.showCards(true);
+    this.dom.addEventListener('mousewheel', this.handleWheel);
+    this.dom.addEventListener('mousedown', this.handleMouseDown);
+    this.dom.addEventListener('mouseup', this.handleMouseUp);
+    window.addEventListener('mouseover', this.handleMouseOver);
+    window.addEventListener('mousemove', this.handleEaseMouseMove);
+    window.addEventListener('mousemove', debounce(this.handleEaseMouseMove));
   }
 
   handleEaseMouseMove = (e) => {
@@ -107,8 +145,8 @@ export default class Renderer3D {
     mouse.x = (e.clientX / width) * 2 - 1;
     mouse.y = -(e.clientY / height) * 2 + 1;
 
-    const dx = -(this.mouse.x - mouse.x) * 1000;
-    const dy = (this.mouse.y - mouse.y) * 1000;
+    const dx = -(this.mouse.x - mouse.x) * 1200;
+    const dy = (this.mouse.y - mouse.y) * 1200;
 
     gsap.to(this, {
       duration: 0.75,
@@ -224,6 +262,12 @@ export default class Renderer3D {
   }
 
   createGrid = (w, h) => {
+    this.mainContainer = new PIXI.Container();
+    this.container = new PIXI.Container();
+    this.mainContainer.addChild(this.container);
+    this.mainContainer.filters = [this.bgFilter];
+    this.app.stage.addChild(this.mainContainer);
+
     const grid = [];
     for (let coll = 0; coll < w; coll++) {
       const tempRow = [];
@@ -307,23 +351,31 @@ export default class Renderer3D {
     });
   };
 
-  showCards = () => {
-    this.sprites.forEach(i => {
-      gsap.to(i, {
-        alpha: 1,
-        delay: i.fadeInDelay,
+  showCards = (showHard = false) => {
+    if (showHard) {
+      this.sprites.forEach(i => {
+        i.alpha = 1;
+      });
+      this.scale = 0.75;
+      this.oldscale = this.scale;
+    } else {
+      this.sprites.forEach(i => {
+        gsap.to(i, {
+          alpha: 1,
+          delay: i.fadeInDelay,
+          duration: 2.5,
+        })
+      });
+      gsap.fromTo(this, {
+        scale: 0.75,
+      }, {
+        scale: 1.1,
         duration: 2.5,
+        onUpdate: () => {
+          this.oldscale = this.scale;
+        },
       })
-    });
-    gsap.fromTo(this, {
-      scale: 0.75,
-    }, {
-      scale: 1.1,
-      duration: 2.5,
-      onUpdate: () => {
-        this.oldscale = this.scale;
-      },
-    })
+    }
   }
 
   hideCards = () => {
@@ -351,7 +403,6 @@ export default class Renderer3D {
   }
 
   render = () => {
-    console.log(this.isMousePressed);
     this.app.ticker.add(() => {
       this.container.children.forEach(s => {
         const cc = s.children[0];
