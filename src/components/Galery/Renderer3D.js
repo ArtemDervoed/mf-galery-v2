@@ -134,6 +134,7 @@ export default class Renderer3D {
       duration: 0.75,
       scrolltargetX: dx,
       scrolltargetY: dy,
+      overwrite: 5
     })
 
     this.mouse = mouse;
@@ -145,13 +146,14 @@ export default class Renderer3D {
     mouse.x = (e.clientX / width) * 2 - 1;
     mouse.y = -(e.clientY / height) * 2 + 1;
 
-    const dx = -(this.mouse.x - mouse.x) * 1200;
-    const dy = (this.mouse.y - mouse.y) * 1200;
+    const dx = -(this.mouse.x - mouse.x) * 1200 * this.scaleCoef;
+    const dy = (this.mouse.y - mouse.y) * 1200 * this.scaleCoef;
 
     gsap.to(this, {
       duration: 0.75,
       scrolltargetX: dx,
       scrolltargetY: dy,
+      overwrite: 5
     })
 
     this.mouse = mouse; 
@@ -184,11 +186,13 @@ export default class Renderer3D {
     gsap.to(this.bgFilter.uniforms, {
       duration: 0.75,
       strength: 0,
+      overwrite: 5
     })
     gsap.to(this, {
       duration: 0.75,
       scrolltargetX: 0,
       scrolltargetY: 0,
+      overwrite: 5
     });
 
     this.sprites.forEach(i => {
@@ -197,6 +201,7 @@ export default class Renderer3D {
         duration: 0.75,
         x: 1,
         y: 1,
+        overwrite: 5
       })
     });
     window.removeEventListener('mousemove', this.handleMouseMove);
@@ -214,6 +219,7 @@ export default class Renderer3D {
       duration: 0.75,
       scrolltargetX: 0,
       scrolltargetY: 0,
+      overwrite: 5
     });
 
     this.sprites.forEach(i => {
@@ -222,6 +228,7 @@ export default class Renderer3D {
         duration: 0.75,
         x: 1,
         y: 1,
+        overwrite: 5
       })
     });
     this.oldMouse = {...this.mouse}; 
@@ -383,6 +390,7 @@ onDragMove = (e) => {
           alpha: 1,
           delay: i.fadeInDelay,
           duration: 2.5,
+          overwrite: 5
         })
       });
       gsap.fromTo(this, {
@@ -390,6 +398,7 @@ onDragMove = (e) => {
       }, {
         scale: 1.1,
         duration: 2.5,
+        overwrite: 5,
         onUpdate: () => {
           this.oldscale = this.scale;
         },
@@ -403,6 +412,7 @@ onDragMove = (e) => {
         alpha: 0,
         delay: i.fadeInDelay,
         duration: 2.5,
+        overwrite: 5
       })
     });
   }
@@ -413,6 +423,7 @@ onDragMove = (e) => {
     gsap.to(this, {
       scale: this.clamp(this.scale + pixelY / 1000, 0.7, 1.25),
       duration: 0.75,
+      overwrite: 5,
     })
   }
 
